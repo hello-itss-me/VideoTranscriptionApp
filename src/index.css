@@ -141,3 +141,11 @@
     .container {
       margin-left: -64px;
     }
+
+    @media (max-width: 768px) {
+      .container {
+        margin-left: 0;
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
