@@ -26,17 +26,21 @@ import { supabase } from './supabase';
     }
 
     export async function handleTranscriptionUpload(files: File[]) {
+      console.log('Starting transcription upload process for:', files.map(file => file.name));
       const queue = [...files]; // Create a copy of the files array
       
       async function processNext() {
         if (queue.length === 0) {
+          console.log('All files processed');
           return; // All files processed
         }
 
         const file = queue.shift()!; // Get the next file from the queue
+        console.log('Processing file:', file.name);
 
         try {
           // Create transcription record
+          console.log('Creating transcription record in Supabase for:', file.name);
           const { data: transcription, error: transcriptionError } = await supabase
             .from('transcriptions')
             .insert({
@@ -52,14 +56,18 @@ import { supabase } from './supabase';
             return;
           }
 
+          console.log('Transcription record created in Supabase:', transcription.id);
+
           // Upload file to Supabase Storage
           const filePath = await uploadAudioFile(file);
 
           // Get transcription from Whisper API
           await delay(DELAY_BETWEEN_REQUESTS); // Add a delay before transcription
+          console.log('Starting transcription with OpenAI for:', filePath);
           const transcriptionText = await transcribeWithRetry(filePath);
 
           // Update transcription record
+          console.log('Updating transcription record in Supabase:', transcription.id);
           const { error: updateError } = await supabase
             .from('transcriptions')
             .update({
@@ -70,6 +78,8 @@ import { supabase } from './supabase';
 
           if (updateError) {
             console.error('Failed to update transcription record:', updateError);
+          } else {
+            console.log('Transcription record updated in Supabase:', transcription.id);
           }
 
         } catch (error) {

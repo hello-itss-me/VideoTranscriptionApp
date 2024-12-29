@@ -11,6 +11,8 @@ interface Segment {
 }
 
 export async function transcribeAudio(fileUrl: string): Promise<string> {
+  console.log('Starting audio transcription for:', fileUrl);
+
   // Download file from Supabase Storage
   const { data: fileData, error: downloadError } = await supabase
     .storage
@@ -18,8 +20,11 @@ export async function transcribeAudio(fileUrl: string): Promise<string> {
     .download(fileUrl);
 
   if (downloadError) {
+    console.error('Failed to download file from storage:', downloadError);
     throw new Error('Failed to download file from storage');
   }
+
+  console.log('File downloaded from Supabase Storage:', fileUrl);
 
   // Create form data for OpenAI API
   const formData = new FormData();
@@ -27,6 +32,8 @@ export async function transcribeAudio(fileUrl: string): Promise<string> {
   formData.append('model', 'whisper-1');
   formData.append('language', 'ru');
   formData.append('response_format', 'verbose_json'); // Request verbose JSON output
+
+  console.log('Sending request to OpenAI API...');
 
   // Send request to OpenAI
   const response = await fetch(OPENAI_API_URL, {
@@ -38,8 +45,11 @@ export async function transcribeAudio(fileUrl: string): Promise<string> {
   });
 
   if (!response.ok) {
+    console.error('Failed to transcribe audio:', response.status, response.statusText);
     throw new Error('Failed to transcribe audio');
   }
+
+  console.log('Response received from OpenAI API');
 
   const result = await response.json();
 
@@ -50,6 +60,8 @@ export async function transcribeAudio(fileUrl: string): Promise<string> {
       return `[${startTime}] Спикер ${segment.speaker}: ${segment.text.trim()}`;
     })
     .join('\n');
+
+  console.log('Transcription processed');
 
   return formattedTranscription;
 }
